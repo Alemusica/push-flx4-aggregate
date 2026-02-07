@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.pushflx4.helper</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/pushflx4-helper</string>
+        <!-- Override device UIDs here: -->
+        <!-- <string>--push-uid</string> -->
+        <!-- <string>AppleUSBAudioEngine:Ableton:Push 2:YOUR_UID</string> -->
+        <!-- <string>--flx4-uid</string> -->
+        <!-- <string>AppleUSBAudioEngine:Pioneer:DDJ-FLX4:YOUR_UID</string> -->
+    </array>
+
+    <!-- Register the Mach service so the plugin can find us. -->
+    <key>MachServices</key>
+    <dict>
+        <key>com.pushflx4.aggregate.helper</key>
+        <true/>
+    </dict>
+
+    <!-- Start at login, restart on crash. -->
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Logging -->
+    <key>StandardOutPath</key>
+    <string>/tmp/pushflx4-helper.stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/pushflx4-helper.stderr.log</string>
+</dict>
+</plist>

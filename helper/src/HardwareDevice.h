@@ -1,35 +1,34 @@
 #pragma once
 
-// HardwareDevice wraps the client HAL API to open IOProcs on real USB audio
-// devices from within the plugin. This violates Apple's documented contract
-// (AudioServerPlugIn.h forbids client HAL calls from plugins) but works
-// reliably in practice across macOS 11–15 (see proxy-audio-device).
-//
-// For Architecture A (IPC companion), this code would move to the helper
-// process and communicate via Mach shared memory instead.
+// Wrapper around CoreAudio client HAL API to open IOProcs on real USB
+// audio devices. This runs in the helper daemon — OUTSIDE the coreaudiod
+// sandbox — so all client HAL calls are legal and Apple-sanctioned.
 
 #include <CoreAudio/CoreAudio.h>
 #include <functional>
 #include <string>
 
+namespace flux {
+
 class HardwareDevice {
 public:
-    // IOProc callback signature: (inDevice, hostTime, inputData, inputTime,
-    //                             outputData, outputTime, userData)
     using IOCallback = std::function<void(
-        AudioDeviceID,
-        const AudioTimeStamp*,
-        const AudioBufferList*,
-        const AudioTimeStamp*,
-        AudioBufferList*,
-        const AudioTimeStamp*
+        AudioDeviceID           device,
+        const AudioTimeStamp*   now,
+        const AudioBufferList*  inputData,
+        const AudioTimeStamp*   inputTime,
+        AudioBufferList*        outputData,
+        const AudioTimeStamp*   outputTime
     )>;
 
     HardwareDevice() = default;
     ~HardwareDevice();
 
-    // Find and bind to a device by its UID string.
-    // Returns false if the device is not found.
+    // Non-copyable, movable.
+    HardwareDevice(const HardwareDevice&) = delete;
+    HardwareDevice& operator=(const HardwareDevice&) = delete;
+
+    // Find device by UID string. Returns false if not found.
     bool open(const std::string& deviceUID);
 
     // Start the IOProc. Callback fires on the device's realtime thread.
@@ -40,11 +39,9 @@ public:
 
     bool isRunning() const { return running_; }
     AudioDeviceID deviceID() const { return deviceID_; }
+    const std::string& uid() const { return uid_; }
 
-    // Query the device's current nominal sample rate.
     double nominalSampleRate() const;
-
-    // Query the device's hardware latency (frames).
     UInt32 deviceLatency(bool input) const;
     UInt32 safetyOffset(bool input) const;
     UInt32 bufferFrameSize() const;
@@ -62,5 +59,8 @@ private:
     AudioDeviceID       deviceID_ = kAudioObjectUnknown;
     AudioDeviceIOProcID ioProcID_ = nullptr;
     IOCallback          callback_;
+    std::string         uid_;
     bool                running_ = false;
 };
+
+} // namespace flux

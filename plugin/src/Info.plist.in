@@ -8,7 +8,7 @@
     <key>CFBundleExecutable</key>
     <string>PushFLX4Aggregate</string>
     <key>CFBundleIdentifier</key>
-    <string>com.custom.audio.PushFLX4Aggregate</string>
+    <string>com.pushflx4.aggregate.plugin</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
@@ -23,7 +23,7 @@
     <string>????</string>
     <key>AudioServerPlugIn_MachServices</key>
     <array>
-        <string>com.custom.audio.PushFLX4Aggregate.helper</string>
+        <string>com.pushflx4.aggregate.helper</string>
     </array>
 </dict>
 </plist>

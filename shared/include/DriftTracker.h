@@ -5,11 +5,14 @@
 // of an independent USB audio device. Feed the output ratio to libsamplerate
 // for adaptive drift correction.
 //
-// Based on Fons Adriaensen's technique used in JACK's zita-a2j.
+// Based on Fons Adriaensen's technique (JACK zita-a2j).
+// Used by the helper daemon only — the plugin never touches this.
 
 #include <cmath>
 #include <cstdint>
 #include <mach/mach_time.h>
+
+namespace flux {
 
 class DriftTracker {
 public:
@@ -20,8 +23,6 @@ public:
     {
     }
 
-    // Call once per IO callback with the callback's host timestamp
-    // and the number of frames in that buffer.
     void update(uint64_t hostTime, uint32_t bufferFrames)
     {
         double t = hostTimeToSeconds(hostTime);
@@ -36,7 +37,7 @@ public:
 
         double period = static_cast<double>(bufferFrames) / rate_;
         double omega = 2.0 * M_PI * bandwidth_ * period;
-        double b = omega * 1.4142135623731;   // sqrt(2) critically-damped
+        double b = omega * 1.4142135623731;   // sqrt(2) — critically damped
         double c = omega * omega;
 
         double error = t - predictedTime_;
@@ -60,12 +61,14 @@ public:
 
     double rate() const { return rate_; }
     double nominalRate() const { return nominalRate_; }
+
+    // Stable after ~50 callbacks (~1-2 seconds at typical buffer sizes).
     bool isStable() const { return initialized_ && stableCount_ > 50; }
 
 private:
     static double hostTimeToSeconds(uint64_t hostTime)
     {
-        // Apple Silicon has a non-trivial timebase ratio (not 1:1 like Intel).
+        // Apple Silicon has a non-trivial timebase (not 1:1 like Intel).
         static mach_timebase_info_data_t info = {};
         if (info.denom == 0) {
             mach_timebase_info(&info);
@@ -84,3 +87,5 @@ private:
     bool   initialized_ = false;
     int    stableCount_ = 0;
 };
+
+} // namespace flux

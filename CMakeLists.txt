@@ -21,57 +21,26 @@ FetchContent_Declare(libsamplerate
 )
 FetchContent_MakeAvailable(libsamplerate)
 
-# ---- Driver Target ----
-add_library(PushFLX4Aggregate MODULE
-    src/PluginEntry.cpp
-    src/AggregateDevice.cpp
-    src/AggregateHandler.cpp
-    src/HardwareDevice.cpp
-    src/TPCircularBuffer.c
-)
+# ---- Subdirectories ----
+add_subdirectory(shared)
+add_subdirectory(plugin)
+add_subdirectory(helper)
 
-set_target_properties(PushFLX4Aggregate PROPERTIES
-    BUNDLE TRUE
-    BUNDLE_EXTENSION "driver"
-    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/Info.plist.in"
-    MACOSX_BUNDLE_BUNDLE_NAME "PushFLX4Aggregate"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "com.custom.audio.PushFLX4Aggregate"
-    MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
-    MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
-    OUTPUT_NAME "PushFLX4Aggregate"
-    PREFIX ""
-    SUFFIX ""
-)
-
-target_include_directories(PushFLX4Aggregate PRIVATE src)
-
-target_link_libraries(PushFLX4Aggregate PRIVATE
-    aspl::libASPL
-    samplerate
-    "-framework CoreAudio"
-    "-framework CoreFoundation"
-    "-framework IOKit"
-    "-framework AudioToolbox"
-)
-
-target_compile_options(PushFLX4Aggregate PRIVATE
-    -Wall -Wextra -Wpedantic
-    -Wno-unused-parameter
-)
-
-# ---- Install target ----
-install(TARGETS PushFLX4Aggregate
-    BUNDLE DESTINATION "/Library/Audio/Plug-Ins/HAL"
-)
-
-# ---- Quick dev install ----
-add_custom_target(install_driver
+# ---- Dev install: plugin + helper + LaunchAgent ----
+add_custom_target(install_all
     COMMAND sudo rm -rf "/Library/Audio/Plug-Ins/HAL/PushFLX4Aggregate.driver"
-    COMMAND sudo cp -R "$<TARGET_BUNDLE_DIR:PushFLX4Aggregate>"
+    COMMAND sudo cp -R "$<TARGET_BUNDLE_DIR:PushFLX4Plugin>"
         "/Library/Audio/Plug-Ins/HAL/PushFLX4Aggregate.driver"
     COMMAND sudo chown -R root:wheel
         "/Library/Audio/Plug-Ins/HAL/PushFLX4Aggregate.driver"
+    COMMAND sudo cp "$<TARGET_FILE:PushFLX4Helper>" "/usr/local/bin/pushflx4-helper"
+    COMMAND sudo chown root:wheel "/usr/local/bin/pushflx4-helper"
+    COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/com.pushflx4.helper.plist"
+        "$ENV{HOME}/Library/LaunchAgents/com.pushflx4.helper.plist"
+    COMMAND launchctl bootout "gui/$$(id -u)/com.pushflx4.helper" 2>/dev/null || true
+    COMMAND launchctl bootstrap "gui/$$(id -u)"
+        "$ENV{HOME}/Library/LaunchAgents/com.pushflx4.helper.plist"
     COMMAND sudo killall coreaudiod || true
-    DEPENDS PushFLX4Aggregate
-    COMMENT "Installing driver and restarting coreaudiod"
+    DEPENDS PushFLX4Plugin PushFLX4Helper
+    COMMENT "Installing plugin + helper + LaunchAgent, restarting coreaudiod"
 )

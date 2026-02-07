@@ -1,7 +1,9 @@
 #include "HardwareDevice.h"
 #include <os/log.h>
 
-static os_log_t sLog = os_log_create("com.custom.audio.PushFLX4Aggregate", "HardwareDevice");
+namespace flux {
+
+static os_log_t sLog = os_log_create("com.pushflx4.aggregate.helper", "HardwareDevice");
 
 HardwareDevice::~HardwareDevice()
 {
@@ -29,13 +31,14 @@ bool HardwareDevice::open(const std::string& deviceUID)
     CFRelease(uidRef);
 
     if (err != noErr || devID == kAudioObjectUnknown) {
-        os_log_error(sLog, "Failed to find device UID '%{public}s': %d",
+        os_log_error(sLog, "Device not found: '%{public}s' (err %d)",
                      deviceUID.c_str(), (int)err);
         return false;
     }
 
     deviceID_ = devID;
-    os_log_info(sLog, "Opened device '%{public}s' → ID %u",
+    uid_ = deviceUID;
+    os_log_info(sLog, "Opened '%{public}s' → device ID %u",
                 deviceUID.c_str(), (unsigned)devID);
     return true;
 }
@@ -50,20 +53,22 @@ bool HardwareDevice::start(IOCallback callback)
     OSStatus err = AudioDeviceCreateIOProcID(
         deviceID_, staticIOProc, this, &ioProcID_);
     if (err != noErr) {
-        os_log_error(sLog, "CreateIOProcID failed: %d", (int)err);
+        os_log_error(sLog, "CreateIOProcID failed on %u: %d",
+                     (unsigned)deviceID_, (int)err);
         return false;
     }
 
     err = AudioDeviceStart(deviceID_, ioProcID_);
     if (err != noErr) {
-        os_log_error(sLog, "AudioDeviceStart failed: %d", (int)err);
+        os_log_error(sLog, "AudioDeviceStart failed on %u: %d",
+                     (unsigned)deviceID_, (int)err);
         AudioDeviceDestroyIOProcID(deviceID_, ioProcID_);
         ioProcID_ = nullptr;
         return false;
     }
 
     running_ = true;
-    os_log_info(sLog, "Started IOProc on device %u", (unsigned)deviceID_);
+    os_log_info(sLog, "IOProc started on device %u", (unsigned)deviceID_);
     return true;
 }
 
@@ -76,9 +81,8 @@ void HardwareDevice::stop()
         AudioDeviceDestroyIOProcID(deviceID_, ioProcID_);
         ioProcID_ = nullptr;
     }
-
     running_ = false;
-    os_log_info(sLog, "Stopped IOProc on device %u", (unsigned)deviceID_);
+    os_log_info(sLog, "IOProc stopped on device %u", (unsigned)deviceID_);
 }
 
 double HardwareDevice::nominalSampleRate() const
@@ -90,7 +94,6 @@ double HardwareDevice::nominalSampleRate() const
         kAudioObjectPropertyScopeGlobal,
         kAudioObjectPropertyElementMain
     };
-
     Float64 rate = 0.0;
     UInt32 size = sizeof(rate);
     AudioObjectGetPropertyData(deviceID_, &addr, 0, nullptr, &size, &rate);
@@ -106,7 +109,6 @@ UInt32 HardwareDevice::deviceLatency(bool input) const
         input ? kAudioObjectPropertyScopeInput : kAudioObjectPropertyScopeOutput,
         kAudioObjectPropertyElementMain
     };
-
     UInt32 latency = 0;
     UInt32 size = sizeof(latency);
     AudioObjectGetPropertyData(deviceID_, &addr, 0, nullptr, &size, &latency);
@@ -122,7 +124,6 @@ UInt32 HardwareDevice::safetyOffset(bool input) const
         input ? kAudioObjectPropertyScopeInput : kAudioObjectPropertyScopeOutput,
         kAudioObjectPropertyElementMain
     };
-
     UInt32 offset = 0;
     UInt32 size = sizeof(offset);
     AudioObjectGetPropertyData(deviceID_, &addr, 0, nullptr, &size, &offset);
@@ -138,7 +139,6 @@ UInt32 HardwareDevice::bufferFrameSize() const
         kAudioObjectPropertyScopeGlobal,
         kAudioObjectPropertyElementMain
     };
-
     UInt32 frames = 0;
     UInt32 size = sizeof(frames);
     AudioObjectGetPropertyData(deviceID_, &addr, 0, nullptr, &size, &frames);
@@ -161,3 +161,5 @@ OSStatus HardwareDevice::staticIOProc(
     }
     return noErr;
 }
+
+} // namespace flux
