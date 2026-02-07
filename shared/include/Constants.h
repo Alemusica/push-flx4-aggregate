@@ -22,8 +22,14 @@ constexpr uint32_t kChannelsPerDevice = 2;
 // Bytes per frame (stereo float32).
 constexpr uint32_t kBytesPerFrame = kChannelsPerDevice * sizeof(float);
 
-// Default nominal sample rate.
-constexpr double kNominalSampleRate = 44100.0;
+// Default nominal sample rate (Push 3 runs at 48kHz).
+constexpr double kNominalSampleRate = 48000.0;
+
+// Default device UIDs.
+constexpr const char* kDefaultPushUID =
+    "AppleUSBAudioEngine:Ableton:Ableton Push 3:37589272:2,3";
+constexpr const char* kDefaultFLX4UID =
+    "AppleUSBAudioEngine:AlphaTheta Corporation:DDJ-FLX4:DKVC227610NN:2,1";
 
 // FLX4 slave path latency reported to Ableton for delay compensation.
 // Ring buffer target fill (~1024 frames) + resampler group delay (~64 frames).

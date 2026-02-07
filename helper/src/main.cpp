@@ -22,12 +22,9 @@ int main(int argc, const char* argv[])
 {
     os_log_info(sLog, "PushFLX4 helper daemon starting");
 
-    // ---- Device UIDs ----
-    // TODO: read from config file or command-line args.
-    // For now, use placeholders — replace with actual UIDs from:
-    //   system_profiler SPAudioDataType
-    std::string pushUID = "AppleUSBAudioEngine:Ableton:Push 2:PLACEHOLDER";
-    std::string flx4UID = "AppleUSBAudioEngine:Pioneer:DDJ-FLX4:PLACEHOLDER";
+    // ---- Device UIDs (defaults from Constants.h, overridable via CLI) ----
+    std::string pushUID = flux::kDefaultPushUID;
+    std::string flx4UID = flux::kDefaultFLX4UID;
 
     // Override from command line: --push-uid <uid> --flx4-uid <uid>
     for (int i = 1; i < argc - 1; ++i) {

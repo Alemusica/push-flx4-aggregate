@@ -9,11 +9,6 @@
     <key>ProgramArguments</key>
     <array>
         <string>/usr/local/bin/pushflx4-helper</string>
-        <!-- Override device UIDs here: -->
-        <!-- <string>--push-uid</string> -->
-        <!-- <string>AppleUSBAudioEngine:Ableton:Push 2:YOUR_UID</string> -->
-        <!-- <string>--flx4-uid</string> -->
-        <!-- <string>AppleUSBAudioEngine:Pioneer:DDJ-FLX4:YOUR_UID</string> -->
     </array>
 
     <!-- Register the Mach service so the plugin can find us. -->
