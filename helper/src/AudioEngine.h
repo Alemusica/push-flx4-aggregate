@@ -57,7 +57,7 @@ private:
     HardwareDevice flx4HW_;
 
     DriftTracker pushDLL_{48000.0};   // Push 3 native rate
-    DriftTracker flx4DLL_{44100.0};   // FLX4 native rate
+    DriftTracker flx4DLL_{48000.0};   // FLX4 supports 44100+48000, use 48k to match Push
 
     // Resamplers for FLX4 slave path (stereo).
     // Input resampler: FLX4 hardware → shared memory (FLX4→Push clock domain).
