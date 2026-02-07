@@ -41,28 +41,33 @@ bool AudioEngine::start()
         return false;
     }
 
-    pushDLL_.reset();
-    flx4DLL_.reset();
-
     // Open Push (master clock).
     if (pushHW_.open(pushUID_)) {
+        double pushRate = pushHW_.nominalSampleRate();
+        pushDLL_ = DriftTracker(pushRate > 0 ? pushRate : 48000.0);
+        os_log_info(sLog, "Push sample rate: %.0f Hz", pushRate);
         shm_->pushState.store(kDeviceConnected, std::memory_order_release);
         pushHW_.start([this](auto... args) { onPushIO(args...); });
         if (pushHW_.isRunning()) {
             shm_->pushState.store(kDeviceRunning, std::memory_order_release);
         }
     } else {
+        pushDLL_.reset();
         os_log_error(sLog, "Push not found — will retry on hot-plug");
     }
 
     // Open FLX4 (slave).
     if (flx4HW_.open(flx4UID_)) {
+        double flx4Rate = flx4HW_.nominalSampleRate();
+        flx4DLL_ = DriftTracker(flx4Rate > 0 ? flx4Rate : 48000.0);
+        os_log_info(sLog, "FLX4 sample rate: %.0f Hz", flx4Rate);
         shm_->flx4State.store(kDeviceConnected, std::memory_order_release);
         flx4HW_.start([this](auto... args) { onFLX4IO(args...); });
         if (flx4HW_.isRunning()) {
             shm_->flx4State.store(kDeviceRunning, std::memory_order_release);
         }
     } else {
+        flx4DLL_.reset();
         os_log_error(sLog, "FLX4 not found — will retry on hot-plug");
     }
 
