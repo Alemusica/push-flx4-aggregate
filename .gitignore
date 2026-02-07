@@ -1,0 +1,21 @@
+# Build
+build/
+cmake-build-*/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+.DS_Store
+
+# Compiled
+*.o
+*.a
+*.dylib
+*.driver/
+
+# Dependencies (fetched by CMake)
+_deps/
