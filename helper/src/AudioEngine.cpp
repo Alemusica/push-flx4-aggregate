@@ -40,6 +40,12 @@ bool AudioEngine::start()
         resamplerIn_ = nullptr;
         return false;
     }
+    resamplerCue_ = src_new(SRC_SINC_MEDIUM_QUALITY, kChannelsPerDevice, &err);
+    if (!resamplerCue_) {
+        os_log_error(sLog, "Failed to create cue resampler: %s",
+                     src_strerror(err));
+        // Non-fatal: cue tap is optional. Continue without it.
+    }
 
     // Open Push (master clock).
     if (pushHW_.open(pushUID_)) {
@@ -71,11 +77,56 @@ bool AudioEngine::start()
         os_log_error(sLog, "FLX4 not found — will retry on hot-plug");
     }
 
+    // ---- Cue process tap (djay → FLX4 output stream 1 = cue channels 3-4) ----
+    if (flx4HW_.isRunning() && resamplerCue_) {
+        if (cueTap_.create(flx4UID_, kFLX4CueStreamIndex, kDjayBundleSubstring)) {
+            cueTap_.start([this](const AudioBufferList* inData,
+                                 const AudioTimeStamp* /*inTime*/,
+                                 UInt32 frameCount) {
+                // Tap callback — runs on the tap's IO thread.
+                // Resample from FLX4 clock → Push clock, write to cue ring buffer.
+                if (!inData || inData->mNumberBuffers == 0 || !resamplerCue_) return;
+
+                const auto& buf = inData->mBuffers[0];
+                bool dllReady = pushDLL_.isStable() && flx4DLL_.isStable();
+
+                if (dllReady) {
+                    double ratio = pushDLL_.rate() / flx4DLL_.rate();
+                    uint32_t maxOutput = static_cast<uint32_t>(
+                        static_cast<double>(frameCount) * ratio + 4);
+                    if (maxOutput > kResampleBufFrames) maxOutput = kResampleBufFrames;
+
+                    SRC_DATA data;
+                    data.data_in = static_cast<const float*>(buf.mData);
+                    data.data_out = cueResampleBuf_;
+                    data.input_frames = frameCount;
+                    data.output_frames = maxOutput;
+                    data.src_ratio = ratio;
+                    data.end_of_input = 0;
+
+                    if (src_process(resamplerCue_, &data) == 0
+                        && data.output_frames_gen > 0) {
+                        shm_->flx4CueInput.write(
+                            cueResampleBuf_,
+                            data.output_frames_gen * kBytesPerFrame);
+                    }
+                } else {
+                    // DLL not stable — pass through raw.
+                    shm_->flx4CueInput.write(buf.mData, buf.mDataByteSize);
+                }
+            });
+            os_log_info(sLog, "Cue tap started on FLX4 stream %d", kFLX4CueStreamIndex);
+        } else {
+            os_log_info(sLog, "Cue tap not available (djay not running?) — will work without cue");
+        }
+    }
+
     shm_->helperStatus.store(kHelperRunning, std::memory_order_release);
     running_ = true;
-    os_log_info(sLog, "AudioEngine started (Push: %s, FLX4: %s)",
+    os_log_info(sLog, "AudioEngine started (Push: %s, FLX4: %s, Cue: %s)",
                 pushHW_.isRunning() ? "running" : "offline",
-                flx4HW_.isRunning() ? "running" : "offline");
+                flx4HW_.isRunning() ? "running" : "offline",
+                cueTap_.isRunning() ? "tapped" : "off");
     return true;
 }
 
@@ -83,11 +134,13 @@ void AudioEngine::stop()
 {
     if (!running_) return;
 
+    cueTap_.stop();
     pushHW_.stop();
     flx4HW_.stop();
 
     if (resamplerIn_) { src_delete(resamplerIn_); resamplerIn_ = nullptr; }
     if (resamplerOut_) { src_delete(resamplerOut_); resamplerOut_ = nullptr; }
+    if (resamplerCue_) { src_delete(resamplerCue_); resamplerCue_ = nullptr; }
 
     shm_->pushState.store(kDeviceDisconnected, std::memory_order_release);
     shm_->flx4State.store(kDeviceDisconnected, std::memory_order_release);

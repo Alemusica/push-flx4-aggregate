@@ -35,6 +35,13 @@ constexpr const char* kDefaultFLX4UID =
 // Ring buffer target fill (~1024 frames) + resampler group delay (~64 frames).
 constexpr uint32_t kFLX4StreamLatency = 1088;
 
+// Process tap: djay Pro AI bundle ID substring for findProcessByName().
+constexpr const char* kDjayBundleSubstring = "algoriddim";
+
+// FLX4 output stream index for cue (0-based). Stream 0 = outputs 1-2 (master),
+// stream 1 = outputs 3-4 (cue/headphones).
+constexpr int kFLX4CueStreamIndex = 1;
+
 // Mach message IDs for the IPC protocol.
 enum MachMsgID : uint32_t {
     kMsgRequestMemory = 100,    // Plugin → Helper: "give me the shared memory"

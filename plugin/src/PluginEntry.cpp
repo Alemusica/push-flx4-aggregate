@@ -64,9 +64,17 @@ static std::shared_ptr<aspl::Driver> CreateDriver()
     flx4OutParams.Latency = kFLX4StreamLatency;
     auto flx4Out = device->AddStreamAsync(flx4OutParams);
 
+    // --- FLX4 cue stream (tapped from djay's cue output via ProcessTap) ---
+    aspl::StreamParameters flx4CueInParams;
+    flx4CueInParams.Direction = aspl::Direction::Input;
+    flx4CueInParams.Format.mChannelsPerFrame = kChannelsPerDevice;
+    flx4CueInParams.Format.mSampleRate = kNominalSampleRate;
+    flx4CueInParams.Latency = kFLX4StreamLatency;
+    auto flx4CueIn = device->AddStreamAsync(flx4CueInParams);
+
     // Wire handler — connects shared memory to streams.
     auto handler = std::make_shared<PluginHandler>(
-        machClient, pushIn, pushOut, flx4In, flx4Out);
+        machClient, pushIn, pushOut, flx4In, flx4Out, flx4CueIn);
     device->SetControlHandler(handler);
     device->SetIOHandler(handler);
 

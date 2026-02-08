@@ -7,6 +7,7 @@
 // and writes all audio + clock data into shared memory for the plugin.
 
 #include "HardwareDevice.h"
+#include "ProcessTap.h"
 #include "SharedMemory.h"
 #include "DriftTracker.h"
 
@@ -62,12 +63,18 @@ private:
     // Resamplers for FLX4 slave path (stereo).
     // Input resampler: FLX4 hardware → shared memory (FLX4→Push clock domain).
     // Output resampler: shared memory → FLX4 hardware (Push→FLX4 clock domain).
+    // Cue resampler: tap audio → shared memory (FLX4→Push clock domain).
     SRC_STATE* resamplerIn_  = nullptr;
     SRC_STATE* resamplerOut_ = nullptr;
+    SRC_STATE* resamplerCue_ = nullptr;
+
+    // Process tap for FLX4 cue output (djay → FLX4 stream 1 = channels 3-4).
+    ProcessTap cueTap_;
 
     // Intermediate buffer for resampler output.
     static constexpr int kResampleBufFrames = 4096;
     float resampleBuf_[kResampleBufFrames * kChannelsPerDevice] = {};
+    float cueResampleBuf_[kResampleBufFrames * kChannelsPerDevice] = {};
 
     bool running_ = false;
 };

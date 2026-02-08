@@ -22,7 +22,7 @@ set_target_properties(PushFLX4Plugin PROPERTIES
 
 target_link_libraries(PushFLX4Plugin PRIVATE
     flux_shared
-    aspl::libASPL
+    libASPL
     "-framework CoreFoundation"
 )
 

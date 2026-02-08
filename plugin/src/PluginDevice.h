@@ -28,9 +28,10 @@ public:
 protected:
     // Called by the HAL on the IO thread to get the current clock position.
     // We just read whatever the helper last wrote from Push's IOProc.
-    OSStatus GetZeroTimeStamp(Float64* outSampleTime,
-                              UInt64*  outHostTime,
-                              UInt64*  outSeed) override
+    OSStatus GetZeroTimeStampImpl(UInt32   /*clientID*/,
+                                  Float64* outSampleTime,
+                                  UInt64*  outHostTime,
+                                  UInt64*  outSeed) override
     {
         if (shm_) {
             *outSampleTime = shm_->pushClock.sampleTime.load(

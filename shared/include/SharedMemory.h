@@ -147,6 +147,10 @@ struct SharedMemoryLayout {
     SPSCRingBuffer pushInput;
     SPSCRingBuffer flx4Input;   // Already resampled to Push clock by helper
 
+    // Cue tap: helper taps djay's FLX4 output stream 1 (channels 3-4 = cue)
+    // via AudioHardwareCreateProcessTap. Resampled to Push clock.
+    SPSCRingBuffer flx4CueInput;
+
     // Output: plugin writes (from Ableton) → helper reads (sends to hardware)
     SPSCRingBuffer pushOutput;
     SPSCRingBuffer flx4Output;  // Helper resamples to FLX4 clock before sending
@@ -162,6 +166,7 @@ struct SharedMemoryLayout {
         driftRatio.store(1.0, std::memory_order_relaxed);
         pushInput.init(kRingBufferCapacity);
         flx4Input.init(kRingBufferCapacity);
+        flx4CueInput.init(kRingBufferCapacity);
         pushOutput.init(kRingBufferCapacity);
         flx4Output.init(kRingBufferCapacity);
     }

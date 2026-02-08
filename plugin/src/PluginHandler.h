@@ -26,7 +26,8 @@ public:
         std::shared_ptr<aspl::Stream> pushIn,
         std::shared_ptr<aspl::Stream> pushOut,
         std::shared_ptr<aspl::Stream> flx4In,
-        std::shared_ptr<aspl::Stream> flx4Out);
+        std::shared_ptr<aspl::Stream> flx4Out,
+        std::shared_ptr<aspl::Stream> flx4CueIn);
 
     ~PluginHandler() override;
 
@@ -56,6 +57,7 @@ private:
     std::shared_ptr<aspl::Stream>  pushOut_;
     std::shared_ptr<aspl::Stream>  flx4In_;
     std::shared_ptr<aspl::Stream>  flx4Out_;
+    std::shared_ptr<aspl::Stream>  flx4CueIn_;
 };
 
 } // namespace flux

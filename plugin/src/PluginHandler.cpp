@@ -13,12 +13,14 @@ PluginHandler::PluginHandler(
     std::shared_ptr<aspl::Stream> pushIn,
     std::shared_ptr<aspl::Stream> pushOut,
     std::shared_ptr<aspl::Stream> flx4In,
-    std::shared_ptr<aspl::Stream> flx4Out)
+    std::shared_ptr<aspl::Stream> flx4Out,
+    std::shared_ptr<aspl::Stream> flx4CueIn)
     : client_(std::move(client))
     , pushIn_(std::move(pushIn))
     , pushOut_(std::move(pushOut))
     , flx4In_(std::move(flx4In))
     , flx4Out_(std::move(flx4Out))
+    , flx4CueIn_(std::move(flx4CueIn))
 {
 }
 
@@ -75,6 +77,12 @@ void PluginHandler::OnReadClientInput(
     else if (stream == flx4In_) {
         // Already resampled to Push clock by the helper.
         if (!shm->flx4Input.read(buff, buffBytesSize)) {
+            std::memset(buff, 0, buffBytesSize);
+        }
+    }
+    else if (stream == flx4CueIn_) {
+        // Cue audio tapped from djay's FLX4 output, resampled by helper.
+        if (!shm->flx4CueInput.read(buff, buffBytesSize)) {
             std::memset(buff, 0, buffBytesSize);
         }
     }
