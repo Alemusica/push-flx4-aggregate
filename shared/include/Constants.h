@@ -42,6 +42,11 @@ constexpr const char* kDjayBundleSubstring = "algoriddim";
 // stream 1 = outputs 3-4 (cue/headphones).
 constexpr int kFLX4CueStreamIndex = 1;
 
+// Gain compensation for multi-channel tap attenuation bug.
+// FLX4 has 2 stereo output pairs → tap attenuates by -6 dB (factor of 0.5).
+// Compensate by multiplying tapped audio by 2.0 (+6 dB).
+constexpr float kCueTapGainCompensation = 2.0f;
+
 // Mach message IDs for the IPC protocol.
 enum MachMsgID : uint32_t {
     kMsgRequestMemory = 100,    // Plugin → Helper: "give me the shared memory"

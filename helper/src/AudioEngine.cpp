@@ -106,13 +106,28 @@ bool AudioEngine::start()
 
                     if (src_process(resamplerCue_, &data) == 0
                         && data.output_frames_gen > 0) {
+                        // Compensate for multi-channel tap attenuation bug.
+                        // FLX4 has 2 stereo pairs → tap delivers -6 dB.
+                        uint32_t totalSamples =
+                            data.output_frames_gen * kChannelsPerDevice;
+                        for (uint32_t i = 0; i < totalSamples; ++i) {
+                            cueResampleBuf_[i] *= kCueTapGainCompensation;
+                        }
                         shm_->flx4CueInput.write(
                             cueResampleBuf_,
                             data.output_frames_gen * kBytesPerFrame);
                     }
                 } else {
-                    // DLL not stable — pass through raw.
-                    shm_->flx4CueInput.write(buf.mData, buf.mDataByteSize);
+                    // DLL not stable — pass through raw (still compensate gain).
+                    // Copy to cue buffer, apply gain, write to shm.
+                    uint32_t totalSamples = frameCount * kChannelsPerDevice;
+                    const float* src = static_cast<const float*>(buf.mData);
+                    for (uint32_t i = 0; i < totalSamples && i < kResampleBufFrames * kChannelsPerDevice; ++i) {
+                        cueResampleBuf_[i] = src[i] * kCueTapGainCompensation;
+                    }
+                    shm_->flx4CueInput.write(
+                        cueResampleBuf_,
+                        frameCount * kBytesPerFrame);
                 }
             });
             os_log_info(sLog, "Cue tap started on FLX4 stream %d", kFLX4CueStreamIndex);
